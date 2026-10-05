@@ -33,7 +33,7 @@ jobs:
           composer install --no-interaction
 
       - name: Import database
-        run: mysql -h 127.0.0.1 -uroot -proot < database_setup.sql
+        run: grep -v -iE '^\s*create (schema|database)' database_setup.sql | mysql -h 127.0.0.1 -uroot -proot pop
 
       - name: Start PHP server
         run: |
