@@ -1,0 +1,47 @@
+name: Run Pioneers of Plymouth (web)
+on:
+  push:
+    branches: [ master, main ]
+  workflow_dispatch:
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:5.7
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: pop
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -proot" --health-interval=10s --health-timeout=5s --health-retries=3
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP 7.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+          extensions: intl, mbstring, pdo_mysql, bcmath
+          coverage: none
+
+      - name: Install dependencies
+        run: |
+          cd game
+          composer install --no-interaction
+
+      - name: Import database
+        run: mysql -h 127.0.0.1 -uroot -proot < database_setup.sql
+
+      - name: Start PHP server
+        run: |
+          cd web
+          php -S 0.0.0.0:8080 > server.log 2>&1 &
+
+      - name: Upload web build
+        uses: actions/upload-artifact@v4
+        with:
+          name: pioneers-web
+          path: .
